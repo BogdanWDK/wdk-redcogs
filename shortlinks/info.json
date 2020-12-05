@@ -1,0 +1,16 @@
+{
+    "author": [
+        "BogdanWDK (BogdanWDK#1337)"
+    ],
+    "install_msg": "Thanks for installing my cog. **DON'T FORGET TO SET THE API KEY. Create an account on https://clean.link/ and go to Developer Tools -> Developer Api to get the Api Key. Type .shortlinks for more help.",
+    "name": "ShortLinks",
+    "short": "Shorten urls.",
+    "min_bot_version": "3.4.0",
+    "disabled": false,
+    "type": "COG"
+    "description": "Shorten urls through command or through listening on channels and replacing links with shorten ones.",
+    "tags": [
+        "Utility"
+    ],
+    "end_user_data_statement": "This cog does not persistently store any data or metadata about users."
+}
