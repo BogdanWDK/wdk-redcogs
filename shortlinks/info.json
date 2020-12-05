@@ -7,7 +7,7 @@
     "short": "Shorten urls.",
     "min_bot_version": "3.4.0",
     "disabled": false,
-    "type": "COG"
+    "type": "COG",
     "description": "Shorten urls through command or through listening on channels and replacing links with shorten ones.",
     "tags": [
         "Utility"
