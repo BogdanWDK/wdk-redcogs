@@ -12,6 +12,7 @@ import requests
 import random
 import json
 import re
+import datetime
 #endof imports
 
 links_regex = re.compile(
@@ -78,29 +79,37 @@ class ShortLinks(commands.Cog):
 
     @commands.command(pass_context=True, aliases=[ 'sh', 'cut'])
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def short(self, ctx, args):
-        """ Shorten links."""
+    async def short(self, ctx, link, alias : str = None, domain : str = None, password : str = None, expiry : str = None):
+        """Shorten Links.
+        ===============
+        If you want to set one argument but ignore the rest, use null.
+        Password must be longer than 4.
+        Expiry format: yyyy-mm-dd
+        To see the domain list, login at https://clean.link/"""
         data = await self.config.guild(ctx.guild).all()
         key = data["api"]
         url = "https://clean.link/api/"
-        payload = {'key' : key, 'url' : args}
-        r = requests.get(url, params=payload)
-        a = r.json()
-        if a['error'] == 1:
-            await ctx.send(a['msg'])
-        else:
-            await ctx.message.delete()
-            await ctx.send(a['short'])
-
-    @commands.command(pass_context=True, aliases=[ 'sha', 'cuta'])
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def shorta(self, ctx, *, args):
-        """ Shorten links with custom alias."""
-        data = await self.config.guild(message.guild).all()
-        key = data["api"]
-        check = args.split(" ")
-        url = "https://clean.link/api/"
-        payload = {'key' : key, 'url' : check[0], 'custom' : check[1]}
+        payload = {'key' : key, 'url' : link}
+        if alias:
+            if alias != "null":
+                payload['custom'] = alias
+        if password:
+            if password != "null":
+                if len(password) < 4:
+                    await ctx.send("Password must be longer than 4.")
+                    return
+                else:
+                    payload['pass'] = password
+        if domain:
+            if domain != "null":
+                payload['domain'] = 'https://' + domain + ''
+        if expiry:
+            if expiry != "null":
+                if datetime.datetime.strptime(expiry, '%Y-%m-%d'):
+                    payload['expiry'] = expiry
+                else:
+                    await ctx.send("Expiry format incorrect. Example: 2021-07-21")
+                    return
         r = requests.get(url, params=payload)
         a = r.json()
         if a['error'] == 1:
