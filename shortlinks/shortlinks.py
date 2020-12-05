@@ -47,6 +47,9 @@ class ShortLinks(commands.Cog):
     	""" Shorten your links without hassle.
     	An account is needed at https://clean.link/
     	https://clean.link/user/tools#api - to get the api .
+
+        __**Commands:**__
+        **short** Shorten a link. Use [p]short for more info.
     	"""
 
     @shortlinks.command(name="api")
