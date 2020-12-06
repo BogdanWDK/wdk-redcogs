@@ -36,8 +36,8 @@ class ShortLinks(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-        self.config = Config.get_conf(self, 2245879106, force_registration=True)
-        datastore = {"api": None,"watching": [], "domain": None}
+        self.config = Config.get_conf(self, 2245879108, force_registration=True)
+        datastore = {"api": None,"watching": [], "domain": None, "rtype": None}
         self.config.register_guild(**datastore)
 
 
@@ -74,6 +74,12 @@ class ShortLinks(commands.Cog):
         """ Set the domain for url shortening.."""
         await self.config.guild(ctx.guild).domain.set(domain)
         await ctx.send("All links will be shortened through " + domain + " now.")
+
+    @shortlinks.command(name="type")
+    async def type(self, ctx, ltype):
+        """ Set the domain for url shortening.."""
+        await self.config.guild(ctx.guild).rtype.set(ltype)
+        await ctx.send("All links will be shortened through " + str(ltype) + " now.")
 
 
     @shortlinks.command(name="unwatch")
@@ -142,6 +148,9 @@ class ShortLinks(commands.Cog):
                 payload['type'] = ltype
             else:
                 payload['type'] = ""
+        else:
+            if data['rtype']:
+                payload['type'] = data['rtype']
         heds = {'Authorization': 'Token ' + key, 'Content-Type': 'application/json'}
         response = requests.post(url="https://clean.link/api/url/add", headers=heds, json=payload)
         if json.loads(response.text)['error'] == 0:
@@ -168,11 +177,14 @@ class ShortLinks(commands.Cog):
             isit = 0
             for word in sentence:
                 if self._match_url(word):
+                    payload = {"url": word}
                     if data['domain']:
                         domain = 'https://' + data['domain']
-                        payload = {'url' : word, 'domain': domain}
-                    else:
-                        payload = {'url' : word}
+                        payload["domain"] = domain
+
+                    if data['rtype']:
+                        payload["type"] = data['rtype']
+
                     heds = {'Authorization': 'Token ' + data['api'], 'Content-Type': 'application/json'}
                     response = requests.post(url="https://clean.link/api/url/add", headers=heds, json=payload)
                     if json.loads(response.text)['error'] == 0:
