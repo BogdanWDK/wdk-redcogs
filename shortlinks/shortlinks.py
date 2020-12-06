@@ -168,7 +168,11 @@ class ShortLinks(commands.Cog):
             isit = 0
             for word in sentence:
                 if self._match_url(word):
-                    payload = {'url' : word}
+                    if data['domain']:
+                        domain = 'https://' + data['domain']
+                        payload = {'url' : word, 'domain': domain}
+                    else:
+                        payload = {'url' : word}
                     heds = {'Authorization': 'Token ' + data['api'], 'Content-Type': 'application/json'}
                     response = requests.post(url="https://clean.link/api/url/add", headers=heds, json=payload)
                     if json.loads(response.text)['error'] == 0:
