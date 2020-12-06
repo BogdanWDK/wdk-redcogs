@@ -4,7 +4,7 @@
 from redbot.core import Config, commands, checks
 import discord
 #other
-from urllib.request import Request, urlopen
+from urllib.parse import urlencode
 from datetime import datetime
 from io import StringIO
 from io import BytesIO
@@ -13,6 +13,7 @@ import random
 import json
 import re
 import datetime
+import pycurl
 #endof imports
 
 links_regex = re.compile(
@@ -44,13 +45,13 @@ class ShortLinks(commands.Cog):
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
     async def shortlinks(self, ctx : commands.Context):
-    	""" Shorten your links without hassle.
-    	An account is needed at https://clean.link/
-    	https://clean.link/user/tools#api - to get the api .
+        """ Shorten your links without hassle.
+        An account is needed at https://clean.link/
+        https://clean.link/user/tools#api - to get the api .
 
         __**Commands:**__
         **short** Shorten a link. Use [p]short for more info.
-    	"""
+        """
 
     @shortlinks.command(name="api")
     async def shortlinks_api(self, ctx, api):
@@ -82,30 +83,37 @@ class ShortLinks(commands.Cog):
 
     @commands.command(pass_context=True, aliases=[ 'sh', 'cut'])
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def short(self, ctx, link, alias : str = None, domain : str = None, password : str = None, expiry : str = None):
+    async def short(self, ctx, link, alias : str = None, domain : str = None, password : str = None, expiry : str = None, ltype : str = None):
         """Shorten Links.
         ===============
         If you want to set one argument but ignore the rest, use null.
         Password must be longer than 4.
         Expiry format: yyyy-mm-dd
-        To see the domain list, login at https://clean.link/"""
+        To see the domain list, login at https://clean.link/
+        Type must be direct/frame/splash/splashid*
+        *splashid: Get the splash id from https://clean.link/user/splash"""
         data = await self.config.guild(ctx.guild).all()
         key = data["api"]
-        url = "https://clean.link/api/"
-        payload = {'key' : key, 'url' : link}
+        payload = {'url' : link}
         if alias:
             if alias != "null":
                 payload['custom'] = alias
+            else:
+                payload['custom'] = ""
         if password:
             if password != "null":
                 if len(password) < 4:
                     await ctx.send("Password must be longer than 4.")
                     return
                 else:
-                    payload['pass'] = password
+                    payload['password'] = password
+            else:
+                payload['password'] = ""
         if domain:
             if domain != "null":
                 payload['domain'] = 'https://' + domain + ''
+            else:
+                payload['domain'] = ""
         if expiry:
             if expiry != "null":
                 if datetime.datetime.strptime(expiry, '%Y-%m-%d'):
@@ -113,13 +121,19 @@ class ShortLinks(commands.Cog):
                 else:
                     await ctx.send("Expiry format incorrect. Example: 2021-07-21")
                     return
-        r = requests.get(url, params=payload)
-        a = r.json()
-        if a['error'] == 1:
-            await ctx.send(a['msg'])
+            else:
+                payload['expiry'] = ""
+        if ltype:
+            if ltype != "null":
+                payload['type'] = ltype
+            else:
+                payload['type'] = ""
+        heds = {'Authorization': 'Token ' + key, 'Content-Type': 'application/json'}
+        response = requests.post(url="https://clean.link/api/url/add", headers=heds, json=payload)
+        if json.loads(response.text)['error'] == 0:
+            await ctx.send(json.loads(response.text)['short'])
         else:
-            await ctx.message.delete()
-            await ctx.send(a['short'])
+            await ctx.send(json.loads(response.text)['msg'])
 
 
     @commands.Cog.listener()
@@ -140,16 +154,14 @@ class ShortLinks(commands.Cog):
             isit = 0
             for word in sentence:
                 if self._match_url(word):
-                    key = data["api"]
-                    url = "https://clean.link/api/";
-                    payload = {'key' : key, 'url' : word}
-                    r = requests.get(url, params=payload)
-                    a = r.json()
-                    if a['error'] == 1:
-                        print("x")
-                    else:
-                        newmessage = newmessage.replace(word, a['short'])
+                    payload = {'url' : word}
+                    heds = {'Authorization': 'Token ' + data['api'], 'Content-Type': 'application/json'}
+                    response = requests.post(url="https://clean.link/api/url/add", headers=heds, json=payload)
+                    if json.loads(response.text)['error'] == 0:
+                        newmessage = newmessage.replace(word, json.loads(response.text)['short'])
                         isit = 1
+                    else:
+                        await ctx.send(json.loads(response.text)['msg'])
             if isit > 0:    
                 await message.channel.send(newmessage)
                 await message.delete()
