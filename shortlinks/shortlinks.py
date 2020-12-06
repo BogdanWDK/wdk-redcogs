@@ -37,7 +37,7 @@ class ShortLinks(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 2245879106, force_registration=True)
-        datastore = {"api": None,"watching": [], 'domain': None}
+        datastore = {"api": None,"watching": [], "domain": None}
         self.config.register_guild(**datastore)
 
 
@@ -60,14 +60,6 @@ class ShortLinks(commands.Cog):
         await ctx.send(f"ShortLinks Api set to: {api}.")
 
 
-    @shortlinks.command(name="domain")
-    async def domain(self, ctx, domain):
-        """ Set the domain for url shortening.."""
-        await self.config.guild(ctx.guild).domain.set(domain)
-        await ctx.send("All links will be shortened through " + domain + " now.")
-
-
-
     @shortlinks.command(name="watch")
     async def watch(self, ctx, channel: discord.TextChannel):
         """ All links will be replaced with shortened ones in the given channel."""
@@ -76,6 +68,12 @@ class ShortLinks(commands.Cog):
             channel_list.append(channel.id)
         await self.config.guild(ctx.guild).watching.set(channel_list)
         await ctx.send(f"{self.bot.get_channel(channel.id).mention}'s links will be replaced by shortened ones.")
+
+    @shortlinks.command(name="domain")
+    async def domain(self, ctx, domain):
+        """ Set the domain for url shortening.."""
+        await self.config.guild(ctx.guild).domain.set(domain)
+        await ctx.send("All links will be shortened through " + domain + " now.")
 
 
     @shortlinks.command(name="unwatch")
@@ -117,16 +115,19 @@ class ShortLinks(commands.Cog):
                     payload['password'] = password
             else:
                 payload['password'] = ""
-
         if domain:
             if domain != "null":
                 payload['domain'] = 'https://' + domain + ''
             else:
-                payload['domain'] = ""
+                if data['domain']:
+                    payload['domain'] = 'https://' + data['domain'] + ''
+                else:
+                    payload['domain'] = ""
         else:
             if data['domain']:
                 payload['domain'] = 'https://' + data['domain'] + ''
-
+            else:
+                payload['domain'] = ""
         if expiry:
             if expiry != "null":
                 if datetime.datetime.strptime(expiry, '%Y-%m-%d'):
@@ -136,13 +137,11 @@ class ShortLinks(commands.Cog):
                     return
             else:
                 payload['expiry'] = ""
-
         if ltype:
             if ltype != "null":
                 payload['type'] = ltype
             else:
                 payload['type'] = ""
-                
         heds = {'Authorization': 'Token ' + key, 'Content-Type': 'application/json'}
         response = requests.post(url="https://clean.link/api/url/add", headers=heds, json=payload)
         if json.loads(response.text)['error'] == 0:
@@ -169,7 +168,11 @@ class ShortLinks(commands.Cog):
             isit = 0
             for word in sentence:
                 if self._match_url(word):
-                    payload = {'url' : word}
+                    if data['domain']:
+                        domain = 'https://' + data['domain']
+                        payload = {'url' : word, 'domain': domain}
+                    else:
+                        payload = {'url' : word}
                     heds = {'Authorization': 'Token ' + data['api'], 'Content-Type': 'application/json'}
                     response = requests.post(url="https://clean.link/api/url/add", headers=heds, json=payload)
                     if json.loads(response.text)['error'] == 0:
@@ -178,7 +181,7 @@ class ShortLinks(commands.Cog):
                     else:
                         await ctx.send(json.loads(response.text)['msg'])
             if isit > 0:    
-                await message.channel.send(newmessage + "(" + message.author.name + ")")
+                await message.channel.send(newmessage)
                 await message.delete()
         except Exception as e:
             print(e)
