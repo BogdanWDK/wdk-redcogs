@@ -135,7 +135,9 @@ class ShortLinks(commands.Cog):
         if message.channel.id not in watch_channel_list:
             return
         try:
+            newmessage = message.content
             sentence = message.content.split()
+            isit = 0
             for word in sentence:
                 if self._match_url(word):
                     key = data["api"]
@@ -144,14 +146,15 @@ class ShortLinks(commands.Cog):
                     r = requests.get(url, params=payload)
                     a = r.json()
                     if a['error'] == 1:
-                        await message_channel.send(a['msg'])
+                        print("x")
                     else:
-                        extra = message.content.replace(word, a['short'])
-                        msg1 = "{}: {}".format(message.author.name, extra)
-                        await message.channel.send(msg1)
-                        await message.delete()
+                        newmessage = newmessage.replace(word, a['short'])
+                        isit = 1
+            if isit > 0:    
+                await message.channel.send(newmessage)
+                await message.delete()
         except Exception as e:
-            await message.channel.send(e)
+            print(e)
             pass
 
     @staticmethod

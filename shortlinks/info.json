@@ -8,6 +8,9 @@
     "min_bot_version": "3.4.0",
     "disabled": false,
     "type": "COG",
+    "requirements" : [
+        "python-a2s"
+    ],
     "description": "Shorten urls through command or through listening on channels and replacing links with shorten ones.",
     "tags": [
         "Utility"
