@@ -37,7 +37,7 @@ class ShortLinks(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 2245879106, force_registration=True)
-        datastore = {"api": None,"watching": []}
+        datastore = {"api": None,"watching": [], "domain": None}
         self.config.register_guild(**datastore)
 
 
@@ -68,6 +68,12 @@ class ShortLinks(commands.Cog):
             channel_list.append(channel.id)
         await self.config.guild(ctx.guild).watching.set(channel_list)
         await ctx.send(f"{self.bot.get_channel(channel.id).mention}'s links will be replaced by shortened ones.")
+
+    @shortlinks.command(name="domain")
+    async def domain(self, ctx, domain):
+        """ Set the domain for url shortening.."""
+        await self.config.guild(ctx.guild).domain.set(domain)
+        await ctx.send("All links will be shortened through " + domain + " now.")
 
 
     @shortlinks.command(name="unwatch")
@@ -112,6 +118,14 @@ class ShortLinks(commands.Cog):
         if domain:
             if domain != "null":
                 payload['domain'] = 'https://' + domain + ''
+            else:
+                if data['domain']:
+                    payload['domain'] = 'https://' + data['domain'] + ''
+                else:
+                    payload['domain'] = ""
+        else:
+            if data['domain']:
+                payload['domain'] = 'https://' + data['domain'] + ''
             else:
                 payload['domain'] = ""
         if expiry:
