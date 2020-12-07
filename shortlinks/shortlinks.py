@@ -37,7 +37,7 @@ class ShortLinks(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 93290619969, force_registration=True)
-        datastore = {"api": None,"watching": [], 'domain': None}
+        datastore = {"api": None,"watching": [], "domain": None, "rtype": None}
         self.config.register_guild(**datastore)
 
 
@@ -63,8 +63,20 @@ class ShortLinks(commands.Cog):
     @shortlinks.command(name="domain")
     async def domain(self, ctx, domain):
         """ Set the domain for url shortening.."""
-        await self.config.guild(ctx.guild).domain.set(domain)
-        await ctx.send("All links will be shortened through " + domain + " now.")
+        if domain != "null":
+            await self.config.guild(ctx.guild).domain.set(domain)
+            await ctx.send("All links will be shortened through " + domain + " now.")
+        else:
+            await self.config.guild(ctx.guild).domain.clear()
+
+    @shortlinks.command(name="type")
+    async def type(self, ctx, rtype):
+        """ Set the domain for url shortening.."""
+        if rtype != "null":
+            await self.config.guild(ctx.guild).rtype.set(rtype)
+            await ctx.send("All links will be shortened through " + rtype + " now.")
+        else:
+            await self.config.guild(ctx.guild).rtype.clear()
 
 
 
@@ -74,8 +86,10 @@ class ShortLinks(commands.Cog):
         channel_list = await self.config.guild(ctx.guild).watching()
         if channel.id not in channel_list:
             channel_list.append(channel.id)
-        await self.config.guild(ctx.guild).watching.set(channel_list)
-        await ctx.send(f"{self.bot.get_channel(channel.id).mention}'s links will be replaced by shortened ones.")
+            await self.config.guild(ctx.guild).watching.set(channel_list)
+            await ctx.send(f"{self.bot.get_channel(channel.id).mention}'s links will be replaced by shortened ones.")
+        else:
+            await ctx.send(f"{self.bot.get_channel(channel.id).mention} is already being watched.")
 
 
     @shortlinks.command(name="unwatch")
@@ -84,10 +98,11 @@ class ShortLinks(commands.Cog):
         channel_list = await self.config.guild(ctx.guild).watching()
         if channel.id in channel_list:
             channel_list.remove(channel.id)
+            await self.config.guild(ctx.guild).watching.set(channel_list)
+            await ctx.send(f"{self.bot.get_channel(channel.id).mention} will not have its links replaced anymore.")
         else:
             return await ctx.send("Channel is not being watched.")
-        await self.config.guild(ctx.guild).watching.set(channel_list)
-        await ctx.send(f"{self.bot.get_channel(channel.id).mention} will not have its links replaced anymore.")
+        
 
     @commands.command(pass_context=True, aliases=[ 'sh', 'cut'])
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -106,8 +121,6 @@ class ShortLinks(commands.Cog):
         if alias:
             if alias != "null":
                 payload['custom'] = alias
-            else:
-                payload['custom'] = ""
         if password:
             if password != "null":
                 if len(password) < 4:
@@ -115,17 +128,15 @@ class ShortLinks(commands.Cog):
                     return
                 else:
                     payload['password'] = password
-            else:
-                payload['password'] = ""
 
         if domain:
             if domain != "null":
-                payload['domain'] = 'https://' + domain + ''
-            else:
-                payload['domain'] = ""
+                prepare = "https://" + domain
+                payload['domain'] = prepare
         else:
             if data['domain']:
-                payload['domain'] = 'https://' + data['domain'] + ''
+                domain = "https://" + data['domain']
+                payload['domain'] = str(domain)
 
         if expiry:
             if expiry != "null":
@@ -134,21 +145,21 @@ class ShortLinks(commands.Cog):
                 else:
                     await ctx.send("Expiry format incorrect. Example: 2021-07-21")
                     return
-            else:
-                payload['expiry'] = ""
 
         if ltype:
             if ltype != "null":
                 payload['type'] = ltype
-            else:
-                payload['type'] = ""
+        else:
+            ltype = data['rtype']
+            payload['type'] = ltype
                 
         heds = {'Authorization': 'Token ' + key, 'Content-Type': 'application/json'}
         response = requests.post(url="https://clean.link/api/url/add", headers=heds, json=payload)
-        if json.loads(response.text)['error'] == 0:
-            await ctx.send(json.loads(response.text)['short'])
+        parsed = json.loads(response.text)
+        if parsed['error'] == 0:
+            await ctx.send(parsed['short'])
         else:
-            await ctx.send(json.loads(response.text)['msg'])
+            await ctx.send(parsed['msg'])
 
 
     @commands.Cog.listener()
@@ -171,7 +182,10 @@ class ShortLinks(commands.Cog):
                 if self._match_url(word):
                     payload = {'url' : word}
                     if data['domain']:
-                        payload = {'url': word, 'domain': domain}
+                        domain = "https://" + data['domain']
+                        payload['domain'] = domain
+                    if data['rtype']:
+                        payload['type'] = data['rtype']
                     heds = {'Authorization': 'Token ' + data['api'], 'Content-Type': 'application/json'}
                     response = requests.post(url="https://clean.link/api/url/add", headers=heds, json=payload)
                     if json.loads(response.text)['error'] == 0:
@@ -180,7 +194,7 @@ class ShortLinks(commands.Cog):
                     else:
                         await ctx.send(json.loads(response.text)['msg'])
             if isit > 0:    
-                await message.channel.send(newmessage + "(" + message.author.name + ")")
+                await message.channel.send("(" + message.author.name + ")\n" + newmessage)
                 await message.delete()
         except Exception as e:
             print(e)
