@@ -71,7 +71,7 @@ class ShortLinks(commands.Cog):
 
     @shortlinks.command(name="type")
     async def type(self, ctx, rtype):
-        """ Set the domain for url shortening.."""
+        """ Set the splash type for url shortening.."""
         if rtype != "null":
             await self.config.guild(ctx.guild).rtype.set(rtype)
             await ctx.send("All links will be shortened through " + rtype + " now.")
