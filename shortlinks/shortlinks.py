@@ -103,44 +103,6 @@ class ShortLinks(commands.Cog):
         else:
             return await ctx.send("Channel is not being watched.")
 
-    @shortlinks.command(name="stats")
-    async def stats(self, ctx, targetapikey : str = None):
-        data = await self.config.guild(ctx.guild).all()
-        key = data["api"]
-        if targetapikey:
-            payload={'apikey': targetapikey}
-            heds = {'Authorization': 'Token ' + key, 'Content-Type': 'application/json'}
-            response = requests.post(url="https://clean.link/api/url/userstats", headers=heds, json=payload)
-            if json.loads(response.text)['error'] == 0:
-                links = json.loads(response.text)['data']
-                unique = "Hi __" + str(json.loads(response.text)['username']) + "__.\nTotal Clicks: **" + str(json.loads(response.text)['total_clicks']) + "** | Unique Clicks: **" + str(json.loads(response.text)['unique_clicks']) + "** \nTotal URLs: **" + str(json.loads(response.text)['total_urls']) + "**\n\nTop 10 Links"
-                lets = ""
-                for link_id, link_data in links.items():
-                    lets += "``" + link_data['shorturl'] + "``" + " | Clicks: **" + str(link_data['clicks']) + "**\n"
-                embed = discord.Embed(title="ShortLink Stats", colour=discord.Colour(0xdf34bd), description="\n\n")
-                embed.set_author(name="ShortLink", url="https://discordapp.com", icon_url="https://cdn.discordapp.com/embed/avatars/0.png")
-                embed.set_footer(text="ShortLink")
-                embed.add_field(name=unique, value=lets)
-                await ctx.send(content='', embed=embed)
-        else:
-            payload={'apikey': key}
-            heds = {'Authorization': 'Token ' + key, 'Content-Type': 'application/json'}
-            response = requests.post(url="https://clean.link/api/url/userstats", headers=heds, json=payload)
-            if json.loads(response.text)['error'] == 0:
-                links = json.loads(response.text)['data']
-                unique = "Hi __" + str(json.loads(response.text)['username']) + "__.\nTotal Clicks: **" + str(json.loads(response.text)['total_clicks']) + "** | Unique Clicks: **" + str(json.loads(response.text)['unique_clicks']) + "** \nTotal URLs: **" + str(json.loads(response.text)['total_urls']) + "**\n\nTop 10 Links"
-                lets = ""
-                for link_id, link_data in links.items():
-                    lets += "``" + link_data['shorturl'] + "``" + " | Clicks: **" + str(link_data['clicks']) + "**\n"
-                embed = discord.Embed(title="Your Statistics", colour=discord.Colour(0xdf34bd), description="\n\n")
-                embed.set_author(name="ShortLink", url="https://discordapp.com", icon_url="https://cdn.discordapp.com/embed/avatars/0.png")
-                embed.set_footer(text="ShortLink")
-                embed.add_field(name=unique, value=lets)
-                await ctx.send(content='', embed=embed)
-
-                    
-
-
 
     @commands.command(pass_context=True, aliases=[ 'sh', 'cut'])
     @commands.cooldown(1, 5, commands.BucketType.user)
